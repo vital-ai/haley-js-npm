@@ -1,0 +1,31 @@
+{
+  "name": "@vital-ai/haley",
+  "version": "0.0.1",
+  "description": "Client library to access Haley AI service",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --reporter spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vital-ai/haley-js-npm.git"
+  },
+  "keywords": [
+    "haley",
+    "artificial",
+    "intelligence",
+    "chatbot",
+    "assistant",
+    "ai"
+  ],
+  "author": "Marc Hadfield",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/vital-ai/haley-js-npm/issues"
+  },
+  "homepage": "https://github.com/vital-ai/haley-js-npm#readme",
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^3.0.2"
+  }
+}
