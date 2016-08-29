@@ -1,6 +1,6 @@
 {
   "name": "@vital-ai/haley",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Client library to access Haley AI service",
   "main": "index.js",
   "dependencies": {
