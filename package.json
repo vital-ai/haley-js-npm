@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "Client library to access Haley AI service",
   "main": "index.js",
+  "dependencies": {
+    "sockjs-client": "^1.1.1"
+  },
   "scripts": {
     "test": "mocha --reporter spec"
   },
