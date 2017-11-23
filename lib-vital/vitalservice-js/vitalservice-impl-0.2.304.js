@@ -17,8 +17,15 @@ var VITAL_SESSION_EXPIRED_CALLBACK = null;
  */
 var VITAL_AUTHENTICATION_REQUIRED_CALLBACK = null;
 
-//overridden cookie attributes
+/**
+ * overridden cookie attributes
+ */ 
 var VITAL_COOKIE_ATTRS = {};
+
+/**
+ * use prefixed cookies if there are multiple apps with different logins hosted in same vital app 
+ */
+var VITAL_COOKIE_PREFIX = '';
 
 //logging disabled by default
 var VITAL_LOGGING = false
@@ -66,6 +73,10 @@ VitalServiceWebsocketImpl = function(address, type, eventBusURL, successCB, erro
 
 	this.address = address;
 	
+	//notified when reconnection event happens
+	this.firstConnectionAttempt = true;
+	this.reconnectHandler = null;
+	
 	//
 	this.authAppID = null; 
 	
@@ -73,7 +84,7 @@ VitalServiceWebsocketImpl = function(address, type, eventBusURL, successCB, erro
 		
 		this.authAppID = this.address.substring('endpoint.'.length);
 		
-		this.COOKIE_SESSION_ID = 'sessionID.' + this.authAppID;
+		this.COOKIE_SESSION_ID = VITAL_COOKIE_PREFIX + 'sessionID.' + this.authAppID;
 		
 		if(typeof($) !== 'undefined') {
 			this.appSessionID = $.cookie(this.COOKIE_SESSION_ID);
@@ -88,6 +99,7 @@ VitalServiceWebsocketImpl = function(address, type, eventBusURL, successCB, erro
 	
 	this.vsJson = null;
 	
+	this.closed = false;
 	
 	//single use callbacks
 	this.sH = successCB;
@@ -308,12 +320,26 @@ VitalServiceWebsocketImpl.prototype.newConn = function() {
     		}
     	}
     	
-    		
+    	if(_this.firstConnectionAttempt) {
+    		_this.firstConnectionAttempt = false;
+    	} else {
+    		if(_this.reconnectHandler != null) {
+    			if(VITAL_LOGGING) { console.log("Notifying reconnect handler"); }
+    			_this.reconnectHandler();
+    		} else {
+    			if(VITAL_LOGGING) { console.log("No reconnect handler to notify"); }
+    		}
+    	}
     		
     };
     	
     this.eb.onclose = function() {
 
+    	if(_this.closed) {
+//    		console.log("client already closed");
+    		return;
+    	}
+    	
     	console.warn('sockjstransport, transport closed, ');
 
     	if(_this.recTimeout != null) {
@@ -458,11 +484,17 @@ VitalServiceWebsocketImpl.prototype.callMethod = function(method, args, successC
 	}
 	
 	
+	try {
+	
 	this.eb.send(this.address, data, function(err, result) {
 		
 		if(err != null) {
 			
-			console.error("ERROR:" + err);
+			console.error("ERROR:", err);
+			
+			if(typeof(err) === 'object' && err.message != null) {
+				err = err.message;
+			}
 			
 			result = { status: 'error', message: err };
 			
@@ -557,7 +589,7 @@ VitalServiceWebsocketImpl.prototype.callMethod = function(method, args, successC
 				_this.appSessionID = null;
 			}
 			
-			if(result.message != null) {
+			if(result.message != null && typeof(result.message.indexOf) === 'function') {
 				
 				if( result.message.indexOf('java.net.ConnectException') >= 0 && VITAL_SERVICE_UNAVAILABLE_URL != null ) {
 					
@@ -602,6 +634,31 @@ VitalServiceWebsocketImpl.prototype.callMethod = function(method, args, successC
 		}
 		
 	});
+	
+	
+	} catch(e) {
+		
+		console.error(e);
+		
+		errorCB('' + e);
+		
+	}
+}
+
+VitalServiceWebsocketImpl.prototype.close = function(successCB, errorCB){
+	
+	this.closed = true;
+	if(this.eb != null) {
+		try {
+			this.eb.close()
+		} catch(e) {
+			console.error(e);
+		}
+		this.eb = null;
+	}
+	
+	successCB();
+	
 	
 }
 
@@ -1156,6 +1213,15 @@ VitalServiceWebsocketImpl.prototype.processGraphQueryResults = function(results,
 	
 }
 
+VitalServiceWebsocketImpl.prototype.destroySessionCookie = function(){
+	
+	if(this.COOKIE_SESSION_ID != null && typeof($) !== 'undefined') {
+		$.removeCookie(this.COOKIE_SESSION_ID, VITAL_COOKIE_ATTRS);
+		$.removeCookie(this.COOKIE_SESSION_ID);
+	}
+	
+}
+
 //substitute for jquery.extend, source: http://stackoverflow.com/a/11197343
 VitalServiceWebsocketImpl.prototype.extend = function extend(a, b){
     for(var key in b)
@@ -1177,7 +1243,7 @@ UUIDGenerator.generate = function() {
 }
 
 
-if(module) {
+if(typeof(module) !== 'undefined') {
 
 	//SockJS = require(__dirname + '/sockjs-0.3.4.min.js');
 	

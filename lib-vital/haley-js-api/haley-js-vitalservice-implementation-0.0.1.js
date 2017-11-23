@@ -13,9 +13,34 @@ HaleyAPIVitalServiceImpl = function(vitalService) {
 	this.defaultHandler = null;
 	
 	this.handlerFunction = null;
+
+	this.logEnabled = true;
 	
 	//classesURIs is an object for better efficiency
 	//{ callback, primaryURIs, classesURIs } 
+	
+	this.reconnectListeners = [];
+	
+	var _this = this;
+	
+	this.vitalService.impl.reconnectHandler = function(){
+	
+		if(_this.logEnabled) {
+			
+			console.log("Notifying " + _this.reconnectListeners.length + ' reconnect listener(s)');
+			
+		}
+		
+		for(var i = 0 ; i < _this.reconnectListeners.length; i++) {
+				
+			_this.reconnectListeners[i]();
+				
+		}
+		
+	};
+	
+	//this timestamp is updated when a new non-hearbeat or non-loggedin/out message is sent
+	this.lastActivityTimestamp = null; 
 	
 }
 
@@ -110,11 +135,15 @@ HaleyAPIVitalServiceImpl.prototype.authenticateSession = function(haleySession, 
 	
 	this.vitalService.callFunction(VitalServiceWebsocketImpl.vitalauth_login, {loginType: 'Login', username: username, password: password}, function(loginSuccess){
 			
-		console.info("auth success: ", loginSuccess);
+		if(_this.logEnabled) {
+			console.log("auth success: ", loginSuccess);
+		}
 
 		_this._sendLoggedInMsg(function(error){
 
-			console.log("loggedin msg sent");
+			if(_this.logEnabled) {
+				console.log("loggedin msg sent");
+			}
 			
 			if(error) {
 				callback(error);
@@ -162,7 +191,9 @@ HaleyAPIVitalServiceImpl.prototype.closeSession = function(haleySession, callack
 		//first register stream handler
 		_this.vitalService.callFunction(VitalService.JS_UNREGISTER_STREAM_HANDLER, {streamName: _this.streamName, handlerFunction: _this.handlerFunction}, function(succsessObj){
 			
-			console.log('unregistered handler for stream ' + _this.streamName, succsessObj);
+			if(_this.logEnabled) {
+				console.log('unregistered handler for stream ' + _this.streamName, succsessObj);
+			}
 			
 			_this.haleySessionSingleton = null;
 			
@@ -185,7 +216,9 @@ HaleyAPIVitalServiceImpl.prototype.closeSession = function(haleySession, callack
 		//unsubscribe first
 		_this.vitalService.callFunction(VitalService.VERTX_STREAM_UNSUBSCRIBE, {streamName: _this.streamName}, function(succsessObj){
 			
-			console.log("unsubscribed from stream " + _this.streamName, succsessObj); 
+			if(_this.logEnabled) {
+				console.log("unsubscribed from stream " + _this.streamName, succsessObj); 
+			}
 			
 			afterUnsubscribed();
 			
@@ -302,7 +335,9 @@ HaleyAPIVitalServiceImpl.prototype.getSessions = function() {
 
 HaleyAPIVitalServiceImpl.prototype._streamHandler = function(msgRL) {
 
-	console.log("Stream " + this.streamName + "received message: ", msgRL);
+	if(this.logEnabled) {
+		console.log("Stream " + this.streamName + "received message: ", msgRL);
+	}
 	
 	var m = msgRL.first();
 	
@@ -327,19 +362,28 @@ HaleyAPIVitalServiceImpl.prototype._streamHandler = function(msgRL) {
 		
 		if(h != null) {
 			
-			console.log("Notifying requestURI handler", requestURI);
+			if(this.logEnabled) {
+				console.log("Notifying requestURI handler", requestURI);
+			}
 			
 			var cbRes = h(msgRL);
 			
 			if(cbRes != null && cbRes == false) {
 				
-				console.log("RequestURI handler returned false, unregistering");
+				if(this.logEnabled) {
+					console.log("RequestURI handler returned false, unregistering");
+				}
 				
 				delete this.requestHandlers[requestURI];
 				
 			} else {
 				
-				console.log("RequestURI handler returned non-false, still regsitered");
+				if(this.logEnabled) {
+					
+					console.log("RequestURI handler returned non-false, still regsitered");
+					
+				} 
+					
 				
 			}
 			
@@ -356,7 +400,9 @@ HaleyAPIVitalServiceImpl.prototype._streamHandler = function(msgRL) {
 		var h = this.handlers[i];
 		
 		if(h.primaryURIs[type] == true) {
-			console.log("Notifying primary type handler: ", h.primaryURIs);
+			if(this.logEnabled) {
+				//console.log("Notifying primary type handler: ", h.primaryURIs);
+			}
 			h.callback(msgRL);
 			c++;
 			return;
@@ -371,8 +417,9 @@ HaleyAPIVitalServiceImpl.prototype._streamHandler = function(msgRL) {
 		
 		if(h.classesURIs[type] == true) {
 			
-			console.log("Notifying secondary type handler: ", h.classesURIs);
-			
+			if(this.logEnabled) {
+				//console.log("Notifying secondary type handler: ", h.classesURIs);
+			}
 			h.callback(msgRL);
 			c++;
 			return;
@@ -383,7 +430,9 @@ HaleyAPIVitalServiceImpl.prototype._streamHandler = function(msgRL) {
 	
 	if(this.defaultHandler != null) {
 		
-		console.log("Notifying default handler");
+		if(this.logEnabled) {
+			//console.log("Notifying default handler");
+		}
 		
 		this.defaultHandler(msgRL);
 		
@@ -391,7 +440,9 @@ HaleyAPIVitalServiceImpl.prototype._streamHandler = function(msgRL) {
 	}
 	
 	
-	console.log("Notified " + c + " msg handlers");
+	if(this.logEnabled) {
+		console.log("Notified " + c + " msg handlers");
+	}
 	
 	//notify handlers if found
 }
@@ -513,8 +564,9 @@ HaleyAPIVitalServiceImpl.prototype.openSession = function(callback) {
 		return;
 	}
 	
-	//just 	
-	console.log('subscribing to stream ', this.streamName);
+	if(this.logEnabled) {
+		console.log('subscribing to stream ', this.streamName);
+	}
 	
 	var _this = this;
 
@@ -525,11 +577,15 @@ HaleyAPIVitalServiceImpl.prototype.openSession = function(callback) {
 	//first register stream handler
 	this.vitalService.callFunction(VitalService.JS_REGISTER_STREAM_HANDLER, {streamName: this.streamName, handlerFunction: this.handlerFunction}, function(succsessObj){
 		
-		console.log('registered handler to ' + _this.streamName, succsessObj);
+		if(_this.logEnabled) {
+			console.log('registered handler to ' + _this.streamName, succsessObj);
+		}
 		
 		_this.vitalService.callFunction(VitalService.VERTX_STREAM_SUBSCRIBE, {streamName: _this.streamName}, function(succsessObj){
 			
-			console.log("subscribed to stream " + _this.streamName, succsessObj); 
+			if(_this.logEnabled) {
+				console.log("subscribed to stream " + _this.streamName, succsessObj); 
+			}
 			
 			//session opened
 			_this.haleySessionSingleton = new HaleySession(_this);
@@ -538,7 +594,9 @@ HaleyAPIVitalServiceImpl.prototype.openSession = function(callback) {
 				
 				_this._sendLoggedInMsg(function(error){
 					
-					console.log("LoggedIn msg sent successfully");
+					if(_this.logEnabled) {
+						console.log("LoggedIn msg sent successfully");
+					}
 					
 					if(error) {
 						callback(error);
@@ -729,8 +787,36 @@ HaleyAPIVitalServiceImpl.prototype.sendMessage = function(haleySession, aimpMess
 		return;
 	}
 	
+	if(!vitaljs.isSubclassOf(aimpMessage.type, 'http://vital.ai/ontology/vital-aimp#AIMPMessage')) {
+		callback("aimpMessage must be an instance of AIMPMessage class, type: " + aimpMessage.type);
+		return;
+	}
+	
 	if(aimpMessage.URI == null) {
 		aimpMessage.URI = this._randomURI();
+	}
+	
+	if(aimpMessage.get('channelURI') == null && haleySession.defaultChannelURI != null) {
+		aimpMessage.set('channelURI', haleySession.defaultChannelURI);
+	}
+	
+	if(aimpMessage.get('endpointURI') == null && haleySession.defaultEndpointURI != null ) {
+		aimpMessage.set('endpointURI', haleySession.defaultEndpointURI);
+	}
+	
+	var updateTimestamp = true;
+	
+	var msgType = aimpMessage.type;
+	
+	if(msgType == 'http://vital.ai/ontology/vital-aimp#UserLoggedIn'
+		|| msgType == 'http://vital.ai/ontology/vital-aimp#UserLoggedOut'
+		|| msgType == 'http://vital.ai/ontology/vital-aimp#UserLeftApp') {
+		updateTimestamp = false;
+	} else if(msgType == 'http://vital.ai/ontology/vital-aimp#HeartbeatMessage') {
+		updateTimestamp = false;
+		if(this.lastActivityTimestamp != null) {
+			aimpMessage.set('lastActivityTime', this.lastActivityTimestamp);
+		}
 	}
 	
 	var sessionID = haleySession.getSessionID();
@@ -742,17 +828,69 @@ HaleyAPIVitalServiceImpl.prototype.sendMessage = function(haleySession, aimpMess
 		
 		var userID = aimpMessage.get('userID');
 		
-		if(userID == null) {
-			aimpMessage.set('userID', authAccount.get('username'));
-		} else {
-			if(userID != authAccount.get('username')) {
-				callback('auth userID ' + authAccount.get('username') + ' does not match one set in message: ' + userID);
+		var authUserID = authAccount.get('username');
+
+		var masterUserID = aimpMessage.get('masterUserID');
+		
+		if(masterUserID != null) {
+
+			if(masterUserID != authUserID) {
+				callback("aimp masterUserID must be equal to current user userID: " + masterUserID + " vs " + authUserID);
 				return;
 			}
+			
+			if(userID == null) {
+				callback('aimp message userID is required when tunneling the message with masterUserID');
+				return;
+			}
+
+			
+			if(masterUserID == userID) {
+				callback('masterUserID cannot be equal to userID: ' + masterUserID);
+				return;
+			}
+				
+		} else {
+		
+			if(userID == null) {
+				aimpMessage.set('userID', authUserID);
+			} else {
+				if(userID != authUserID) {
+					callback('auth userID ' + authUserID + ' does not match one set in message: ' + userID);
+					return;
+				}
+			}
+			
+			var n = authAccount.get('name');
+			aimpMessage.set('userName', n != null ? n : authAccount.get('username'));
+			
 		}
 		
-		var n = authAccount.get('name');
-		aimpMessage.set('userName', n != null ? n : authAccount.get('username'));
+		
+		
+		
+	} else {
+		
+		
+		if( haleySession.tunnelEnabled == true ) {
+			callback('tunnel must not be enabled for anonymous sessions');
+			return;
+		} 
+//		this.defaultUserID = null;
+//		//default userName for output messages
+//		this.defaultUserName = null;
+//		//with tunnelEnabled option the message masterUserID will be set 
+//		//allowing for different userID set in the message
+//		this.tunnelEnabled = false;
+		
+		if(aimpMessage.get('userID') == null && haleySession.defaultUserID != null) {
+			aimpMessage.set('userID', haleySession.defaultUserID);
+		}
+		
+		if(aimpMessage.get('userName') == null && haleySession.defaultUserName != null) {
+			aimpMessage.set('userName', haleySession.defaultUserName);
+		}
+	
 		
 	}
 	
@@ -766,11 +904,6 @@ HaleyAPIVitalServiceImpl.prototype.sendMessage = function(haleySession, aimpMess
 		}
 	}
 	
-	if(!vitaljs.isSubclassOf(aimpMessage.type, 'http://vital.ai/ontology/vital-aimp#AIMPMessage')) {
-		callback("aimpMessage must be an instance of AIMPMessage class, type: " + aimpMessage.type);
-		return;
-	}
-	
 	var rl = vitaljs.resultList();
 	rl.addResult(aimpMessage);
 	
@@ -780,9 +913,22 @@ HaleyAPIVitalServiceImpl.prototype.sendMessage = function(haleySession, aimpMess
 		}
 	}
 	
-	this.vitalService.callFunction('haley-send-message', {message: rl}, function(successRL){
+//	this.vi
+	var currentLogin = this.vitalService.getCurrentLogin();
+	
+	var method = currentLogin != null ? 'haley-send-message' : 'haley-send-message-anonymous';
+	
+	var _this = this;
+	
+	this.vitalService.callFunction(method, {message: rl}, function(successRL){
 		
-		console.log("message sent successfully", successRL);
+		if(_this.logEnabled) {
+			console.log("message sent successfully", successRL);
+		}
+		
+		if(updateTimestamp) {
+			_this.lastActivityTimestamp = new Date().getTime();
+		}
 		
 		callback();
 		
@@ -834,7 +980,9 @@ HaleyAPIVitalServiceImpl.prototype.unauthenticateSession = function(haleySession
 		
 		_this.vitalService.callFunction(VitalServiceWebsocketImpl.vitalauth_logout, {}, function(logoutSuccess){
 			
-			console.info("Logout function success", logoutSuccess);
+			if(_this.logEnabled) {
+				console.log("Logout function success", logoutSuccess);
+			}
 			
 			callback();
 			
@@ -857,7 +1005,153 @@ HaleyAPIVitalServiceImpl.prototype.unauthenticateSession = function(haleySession
 //uploadBinary(HaleySession, Channel, HaleyCallback)
 
 
-if(module) {
+
+
+HaleyAPIVitalServiceImpl.prototype.addReconnectListener = function(reconnectListener) {
+
+
+	if(this.reconnectListeners.indexOf(reconnectListener) >= 0) {
+		if(this.logEnabled) console.log("Reconnect listner already added");
+		return false;
+		
+	} else {
+		
+		if(this.logEnabled) console.log("New reconnect listener added");
+		
+		this.reconnectListeners.push(reconnectListener);
+		
+		return true;
+		
+	}
+	
+}
+
+
+HaleyAPIVitalServiceImpl.prototype.removeReconnectListener = function(reconnectListener) {
+
+	var indexOf = this.reconnectListeners.indexOf(reconnectListener);
+	
+	if(indexOf < 0) {
+		return false;
+	}
+	
+	this.reconnectListeners.splice(indexOf, 1);
+	
+	return true;
+	
+}
+
+HaleyAPIVitalServiceImpl.prototype._listServerDomainModelsJQueryImpl = function(callback) {
+	
+	console.log("Getting server domains list from saas server");
+
+	if(typeof(document) === 'undefined') {
+		callback("No document object - client side listServerDomainModels not available");
+		return;
+	}
+	
+	if(typeof(jQuery) === 'undefined') {
+		callback("No jQuery object - client side listServerDomainModels not available");
+		return;
+	}
+	
+    var parser  = document.createElement("a");
+    parser.href = this.vitalService.impl.url;
+    
+    var domainsURL = parser.protocol + '//' + parser.host + '/domains';
+    
+	//Load the request module
+	var jqxhr = $.ajax( { method: 'GET', url: domainsURL, cache: false} )
+	.done(function(body) {
+		try {
+			console.log("domains objects", body);
+			var parsed = body;
+   			var domainsList = [];
+   			for(var i = 0 ; i < parsed.length; i++) {
+   				var obj = parsed[i];
+   				domainsList.push(vitaljs.graphObject(obj));
+   			}
+    			
+			callback(null, domainsList);
+				
+   		} catch(e) {
+   			callback("error when parsing domains json: " + e, null);
+   		}
+	}).fail(function(jqXHR, textStatus) {
+		console.error("domains check failed: " + textStatus);
+    	callback(textStatus, null);
+	});
+		
+}
+
+HaleyAPIVitalServiceImpl.prototype.listServerDomainModels = function(callback) {
+
+	console.log("Getting server domains list");
+	
+	if(typeof(module) === 'undefined') {
+//		callback("No module object - listServerDomainModels is only available in nodejs context");
+//		return;
+		this._listServerDomainModelsJQueryImpl(callback);
+		return;
+	}
+	
+	if(typeof(require) === 'undefined') {
+		callback("No require object - listServerDomainModels is only available in nodejs context");
+		return;
+	}
+	
+	
+	if( !this.vitalService.impl.url ) {
+		callback("No eventbusURL available in vitalService object");
+		return;
+	} 
+	
+	var url = require('url').parse(this.vitalService.impl.url);
+	
+	console.log("eventbus url:", this.vitalService.impl.url);
+	
+	var domainsURL = url.protocol + '//' + url.host + '/domains';
+
+	//Load the request module
+	var request = require('request');
+
+	
+	request({
+	    url: domainsURL,
+	    qs: {}, //Query string data
+	    method: 'GET'
+	}, function(error, response, body){
+	    if(error) {
+	    	console.error("Error when getting user profile data", error);
+	    	callback(error, null);
+	    } else {
+	    	if(response.statusCode == 200) {
+	    		
+	    		console.log(response.statusCode, ( body && body.length > 100 ) ? ( body.substring(0, 97) + "...") : body);
+	    		try {
+	    			
+	    			var parsed = JSON.parse(body);
+	    			var domainsList = [];
+	    			for(var i = 0 ; i < parsed.length; i++) {
+	    				var obj = parsed[i];
+	    				domainsList.push(vitaljs.graphObject(obj));
+	    			}
+	    			
+    				callback(null, domainsList);
+    				
+	    		} catch(e) {
+	    			callback("error when parsing domains json: " + e, null);
+	    		}
+	    	} else {
+	    		console.error("Error when getting domains data " + response.statusCode, body);
+	    	}
+	    }
+	});
+	
+}
+
+
+if(typeof(module) !== 'undefined') {
 
 //	if(typeof(VitalService) === 'undefined') {
 

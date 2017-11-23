@@ -25,7 +25,7 @@ if(module) {
 
 VitalService = function(address, eventbusURL, successCB, errorCB) {
 
-	if(module) {
+	if(typeof(module) !== 'undefined') {
 		
 		if( typeof(tv4) === 'undefined' ) {
 
@@ -35,15 +35,38 @@ VitalService = function(address, eventbusURL, successCB, errorCB) {
 			
 			tv4 = require(__dirname + '/tv4.min.js');
 		
+			LRUCache = require(__dirname + '/lru.js').LRUCache;
 			
-			require(__dirname + '/vital-core-0.2.304.js');
+//			console.log('lrucache', LRUCache);
 			
-			require(__dirname + '/vital-0.2.304.js');
+//			console.log('vital-core', 
+					require(__dirname + '/vital-core-0.2.304.js')
+//			);
 			
-			require(__dirname + '/vital-aimp-0.1.0.js');
+//			console.log('vital', 
+					require(__dirname + '/vital-0.2.304.js')
+//				);
 			
-			require(__dirname + '/haley-0.1.0.js');
+//			console.log('vital-nlp', 
+					require(__dirname + '/vital-nlp-0.2.304.js')
+//			);
 			
+//			console.log('vital-social', 
+					require(__dirname + '/vital-social-0.2.304.js')
+//					);
+			
+//			console.log('vital-aimp', 
+					require(__dirname + '/vital-aimp-0.1.0.js')
+//			);
+			
+//			console.log('haley', 
+					require(__dirname + '/haley-0.1.0.js')
+//					);
+					
+//			console.log('haley-shopping', 
+					require(__dirname + '/haley-shopping-0.1.0.js')
+//			);
+					
 			var import1 = require(__dirname + '/vitalservice-json-0.2.304.js');
 			
 			vitaljs = import1.vitaljs;
@@ -106,6 +129,16 @@ VitalService.prototype.getAppSessionID = function() {
 //bulkImport(VitalSegment, InputStream)
 
 /**
+ * Destroy vitalservice session cookie
+ */
+VitalService.prototype.destroySessionCookie = function() {
+	this.impl.destroySessionCookie();
+}
+
+//bulkExport(VitalSegment, OutputStream)
+//bulkImport(VitalSegment, InputStream)
+
+/**
  * Calls datascript with name and params
  * returns ResultList
  */
@@ -149,7 +182,10 @@ VitalService.prototype.callFunction = function(functionName, paramsMap, successC
 	this.impl.callMethod('callFunction', [functionName, paramsMap], successCB, errorCB);
 }
 
-//close()
+//close() //vital status?
+VitalService.prototype.close = function(successCB, errorCB) {
+	this.impl.close(successCB, errorCB);
+}
 
 VitalService.prototype.commitTransaction = function(transaction, successCB, errorCB) {
 	this.impl.callMethod('commitTransaction', [transaction], successCB, errorCB);
@@ -611,7 +647,7 @@ VitalService.prototype.unloadSchema = function(schemaURI, successCB, errorCB) {
 }
 
 
-if(module) {
+if(typeof(module) !== 'undefined') {
 	
 	module.exports = VitalService;
 	
