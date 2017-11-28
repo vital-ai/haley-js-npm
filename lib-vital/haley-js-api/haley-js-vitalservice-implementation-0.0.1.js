@@ -1,6 +1,6 @@
 HaleyAPIVitalServiceImpl = function(vitalService) {
-	if(HaleyAPIVitalServiceImpl.SINGLETON != null) throw "only single instance of HaleyAPIVitalServiceImpl allowed";
-	HaleyAPIVitalServiceImpl.SINGLETON = this;
+//	if(HaleyAPIVitalServiceImpl.SINGLETON != null) throw "only single instance of HaleyAPIVitalServiceImpl allowed";
+//	HaleyAPIVitalServiceImpl.SINGLETON = this;
 	this.vitalService = vitalService;
 	this.haleySessionSingleton = null;
 	this.streamName = 'haley';

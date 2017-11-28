@@ -348,7 +348,7 @@ VitalServiceWebsocketImpl.prototype.newConn = function() {
     	}
     		
     	if(_this.eH != null) {
-    		_this.eH('e');
+    		_this.eH('sockjstransport, transport closed');
     	}
     	_this.eH = null;
     		
