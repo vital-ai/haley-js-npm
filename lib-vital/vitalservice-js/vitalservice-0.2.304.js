@@ -36,44 +36,30 @@ VitalService = function(address, eventbusURL, successCB, errorCB) {
 			tv4 = require(__dirname + '/tv4.min.js');
 		
 			LRUCache = require(__dirname + '/lru.js').LRUCache;
-			
-//			console.log('lrucache', LRUCache);
-			
-//			console.log('vital-core', 
-					require(__dirname + '/vital-core-0.2.304.js')
-//			);
-			
-//			console.log('vital', 
-					require(__dirname + '/vital-0.2.304.js')
-//				);
-			
-//			console.log('vital-nlp', 
-					require(__dirname + '/vital-nlp-0.2.304.js')
-//			);
-			
-//			console.log('vital-social', 
-					require(__dirname + '/vital-social-0.2.304.js')
-//					);
-			
-//			console.log('vital-aimp', 
-					require(__dirname + '/vital-aimp-0.1.0.js')
-//			);
-			
-//			console.log('haley', 
-					require(__dirname + '/haley-0.1.0.js')
-//					);
-					
-//			console.log('haley-shopping', 
-					require(__dirname + '/haley-shopping-0.1.0.js')
-//			);
-					
+
+			require(__dirname + '/vital-core-0.2.304.js');
+			require(__dirname + '/vital-0.2.304.js');
+			require(__dirname + '/vital-nlp-0.2.304.js');
+			require(__dirname + '/vital-social-0.2.304.js');
+			require(__dirname + '/vital-aimp-0.1.0.js');
+			require(__dirname + '/haley-0.1.0.js');
+			require(__dirname + '/haley-shopping-0.1.0.js');
+
+			// loding vitalservice domains
+			var fs = require('fs');
+			var path = require('path');
+			var items = fs.readdirSync(path.join(__dirname, '../../../../../vitalservice/domains'));
+			for(var i = 0 ; i < items.length; i++) {
+				var file = items[i];
+				console.log("Loading domain file: " + file)
+				require(path.join(__dirname, '../../../../../vitalservice/domains', file));
+			}
+		
 			var import1 = require(__dirname + '/vitalservice-json-0.2.304.js');
-			
 			vitaljs = import1.vitaljs;
 			VitalServiceJson = import1.VitalServiceJson;
 			
 			var import2 = require(__dirname + '/vitalservice-impl-0.2.304.js');
-			
 			VitalServiceWebsocketImpl = import2.VitalServiceWebsocketImpl;
 			UUIDGenerator = import2.UUIDGenerator;
 
