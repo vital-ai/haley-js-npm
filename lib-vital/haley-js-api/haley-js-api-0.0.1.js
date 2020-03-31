@@ -46,8 +46,10 @@ HaleySession.prototype.getAuthAccount = function() {
  * @param syncdomains
  * @returns
  */
-HaleyAPI = function(implementation, syncdomains, callback) {
+HaleyAPI = function(implementation, syncdomains, callback, logger) {
+	this.logger = logger != null ? logger : console;
 	this.impl = implementation;
+	this.impl.logger = this.logger;
 	if(syncdomains) {
 		throw "syncdomains not supported yet";
 	}
@@ -64,6 +66,15 @@ HaleyAPI = function(implementation, syncdomains, callback) {
 	});
 }
 
+HaleyAPI.prototype.setLogger = function(logger){
+	if(logger == null) throw new Error("logger cannot be null"); 
+	this.impl.logger = logger;
+	this.logger = logger;
+}
+
+HaleyAPI.prototype.getLogger = function() {
+	return this.logger;
+}
 
 /**
  * Authenticates haley session or throws exception if already authenticated or auth error occured
@@ -72,6 +83,17 @@ HaleyAPI.prototype.authenticateSession = function(haleySession, username, passwo
 	this.impl.authenticateSession(haleySession, username, password, callback);
 }
 
+/**
+ * Authenticates haley session or throws exception if already authenticated or auth error occured
+ */
+HaleyAPI.prototype.authenticateSessionWithAccountID = function(haleySession, username, password, accountID, callback) {
+	this.impl.authenticateSessionWithAccountID(haleySession, username, password, accountID, callback);
+}
+
+
+HaleyAPI.prototype.close = function(callback) {
+	this.impl.close(callback);
+}
 
 HaleyAPI.prototype.closeAllSessions = function(callback) {
 	this.impl.closeAllSessions(callback);
@@ -102,8 +124,7 @@ HaleyAPI.prototype.getDefaultCallback = function(haleySession) {
 }
 
 
-//downloadBinary(HaleySession, String, Channel)
-//downloadBinary(HaleySession, String, Channel, HaleyCallback)
+
 //getActiveThreadCount()
 HaleyAPI.prototype.getSessions = function() {
 	return this.impl.getSessions();
@@ -239,6 +260,8 @@ HaleyAPI.prototype.listServerDomainModels = function(callback) {
  */
 HaleyAPI.prototype.validateDomainModels = function(failIfListElementsDifferent, callback) {
 	
+	var _this = this;
+	
 	this.listServerDomainModels(function(error, models){
 		
 		try {
@@ -346,7 +369,7 @@ HaleyAPI.prototype.validateDomainModels = function(failIfListElementsDifferent, 
 			callback(null);
 			
 		} catch(e) {
-			console.error(e);
+			_this.logger.error(e);
 			callback("Internal error: " + e);
 		}
 		
@@ -354,8 +377,115 @@ HaleyAPI.prototype.validateDomainModels = function(failIfListElementsDifferent, 
 	
 }
 
-//uploadBinary(HaleySession, Channel)
-//uploadBinary(HaleySession, Channel, HaleyCallback)
+/**
+ * Takes care of file upload in response to a File Question
+ * @param haleySession
+ * @param fileQuestionMessage [QuestionMessage, FileQuestion]
+ * @param fileObject, an object 
+ * 	{ 
+ * 		file: <from file inputfile>,
+ * 		accountURIs: <list of additional accountsURIs to be added to file node>,
+ *      fileNodeClass: optional fileNodeClass, default: 'http://vital.ai/ontology/vital#FileNode',
+ *      parentNodeURI: optional parent of the filenode, defaults to accountURI,
+ *      progressListener: optional progress listener that is called with (loaded, total) bytes
+ *  }
+ *  selected in some form
+ * @param callback (error, fileNode)
+ */
+HaleyAPI.prototype.uploadFileInBrowser = function(haleySession, fileQuestionMessage, fileObject, callback) {
+	this.impl.uploadFileInBrowser(haleySession, fileQuestionMessage, fileObject, callback);
+}
+
+/**
+ * Takes care of file upload in response to a File Question in cordova
+ * @param haleySession
+ * @param fileQuestionMessage [QuestionMessage, FileQuestion]
+ * @param fileObject, an object 
+ * 	{ 
+ * 		file: <from file inputfile>,
+ * 		accountURIs: <list of additional accountsURIs to be added to file node>,
+ *      fileNodeClass: optional fileNodeClass, default: 'http://vital.ai/ontology/vital#FileNode',
+ *      parentNodeURI: optional parent of the filenode, defaults to accountURI,
+ *      progressListener: optional progress listener that is called with (loaded, total) bytes
+ *  }
+ *  selected in some form
+ * @param callback (error, fileNode)
+ */
+HaleyAPI.prototype.uploadFileInCordova = function(haleySession, fileQuestionMessage, fileObject, callback) {
+	this.impl.uploadFileInCordova(haleySession, fileQuestionMessage, fileObject, callback);
+}
+
+/**
+ * Uploads file in non-browser (nodejs) environment in response to a File Question
+ * @param haleySession
+ * @param fileQuestionMessage [QuestionMessage, FileQuestion]
+ * @param fileObject, an object 
+ * 	{ 
+ * 		filePath: pathToLocalFile,
+ * 		accountURIs: <list of additional accountsURIs to be added to file node>,
+ *      fileNodeClass: optional fileNodeClass, default: 'http://vital.ai/ontology/vital#FileNode',
+ *      parentNodeURI: optional parent of the filenode, defaults to accountURI
+ *  }
+ *  selected in some form
+ * @param callback (error, fileNode)
+ */
+HaleyAPI.prototype.uploadFile = function(haleySession, fileQuestionMessage, fileObject, callback) {
+	this.impl.uploadFile(haleySession, fileQuestionMessage, fileObject, callback);
+}
+
+/**
+ * Cancels a spawned file upload
+ * @param haleySession
+ * @param fileQuestionMessage
+ * @param callback
+ */
+HaleyAPI.prototype.cancelFileUpload = function(haleySession, fileQuestionMessage, callback) {
+	this.impl.cancelFileUpload(haleySession, fileQuestionMessage, callback);
+}
+
+
+/**
+ * Returns the download URL for given file node. Private URLs contain sessionID.
+ */
+HaleyAPI.prototype.getFileNodeDownloadURL = function(haleySession, fileNode) {
+	return this.impl.getFileNodeDownloadURL(haleySession, fileNode);
+}
+
+/**
+ * Returns the download URL for given file node URI
+ */
+HaleyAPI.prototype.getFileNodeURIDownloadURL = function(haleySession, fileNodeURI) {
+	return this.impl.getFileNodeURIDownloadURL(haleySession, fileNodeURI);
+}
+
+
+/**
+ * add a listener notified with (error, haleySession, aimpMessage, payload)
+ * returns true if added, false if already added
+ */
+HaleyAPI.prototype.addAIMPMessageSentListener = function(listener) {
+	return this.impl.addAIMPMessageSentListener(listener);
+}
+
+/**
+ * remove an AIMP message sent listener
+ * returns true if removed, false if was not added 
+ */
+HaleyAPI.prototype.removeAIMPMessageSentListener = function(listener) {
+	return this.impl.removeAIMPMessageSentListener(listener);
+} 
+
+
+/**
+ * False by default. When enabled the client attempts to re-authenticate if current session was expired/not found.
+ */
+HaleyAPI.prototype.setCredentialsCacheEnabled = function(enabled) {
+	this.impl.credentialsCacheEnabled = enabled;
+}
+
+HaleyAPI.prototype.isCredentialsCacheEnabled = function() {
+	return this.impl.credentialsCacheEnabled;
+}
 
 //nodejs specific
 if(typeof(module) !== 'undefined') {
