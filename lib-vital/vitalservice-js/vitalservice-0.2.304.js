@@ -4,6 +4,13 @@
  * @param eventBusURL - if null then current window url protocol://host:port/eventbus will be used 
  * @param successCB
  * @param errorCB
+ * @param options: 
+ * 		{
+ * 			logger: (default console), 
+ * 			loggingEnabled: (default false),
+ * 			disconnectOnWebsocketLimitExceeded: (default false),
+ * 			websocketLimitExceededHandler: (default null)
+ *		}
  * @returns
  */
 
@@ -23,7 +30,7 @@ if(module) {
 }
 */
 
-VitalService = function(address, eventbusURL, successCB, errorCB) {
+VitalService = function(address, eventbusURL, successCB, errorCB, options) {
 
 	if(typeof(module) !== 'undefined') {
 		
@@ -67,10 +74,47 @@ VitalService = function(address, eventbusURL, successCB, errorCB) {
 		
 	}
 	
-	//the vitalservice is initialized asynchronously
-	this.impl = new VitalServiceWebsocketImpl(address, 'service', eventbusURL, successCB, errorCB);
+	var _logger = console;
+	
+	var _loggingEnabled = false;
+	
+	var _disconnectOnWebsocketLimitExceeded = false;
+	
+	var _websocketLimitExceededHandler = null;
+	
+	if(options != null) {
+		if(options.logger != null) {
+			_logger = options.logger;
+		}
+		if(options.loggingEnabled != null) {
+			_loggingEnabled = options.loggingEnabled;
+		}
+		if(options.disconnectOnWebsocketLimitExceeded != null) {
+			_disconnectOnWebsocketLimitExceeded = options.disconnectOnWebsocketLimitExceeded;
+		}
+		if(options.websocketLimitExceededHandler != null) {
+			_websocketLimitExceededHandler = options.websocketLimitExceededHandler;
+		}
+		if(options.impl != null) {
+			_logger.warn("Overriding default websocket implementation");
+			this.impl = options.impl;
+		}
+	}
+	
+	//default is console
+	this.logger = _logger;
 	
 	this.NO_TRANSACTION = null;
+	
+	if(this.impl == null) {
+
+		//the vitalservice is initialized asynchronously
+		this.impl = new VitalServiceWebsocketImpl(address, 'service', eventbusURL, successCB, errorCB, this.logger, _loggingEnabled);
+		this.impl.disconnectOnWebsocketLimitExceeded = _disconnectOnWebsocketLimitExceeded;
+		this.impl.websocketLimitExceededHandler = _websocketLimitExceededHandler;
+		this.impl.newConnection();
+		
+	}
 	
 }
 
@@ -86,6 +130,16 @@ VitalService.VERTX_STREAM_SUBSCRIBE = 'vertx-stream-subscribe';
 VitalService.VERTX_STREAM_UNSUBSCRIBE = 'vertx-stream-unsubscribe';
 
 
+
+VitalService.prototype.setLogger = function(logger){
+	if(logger == null) throw new Error("logger cannot be null"); 
+	this.impl.logger = logger;
+	this.logger = logger;
+}
+
+VitalService.prototype.getLogger = function() {
+	return this.logger;
+}
 
 //non - api
 
@@ -119,6 +173,18 @@ VitalService.prototype.getAppSessionID = function() {
  */
 VitalService.prototype.destroySessionCookie = function() {
 	this.impl.destroySessionCookie();
+}
+
+/**
+ * Sets auth session expired handler. 
+ * Handler returning false prevent further processing.
+ */
+VitalService.prototype.setAuthSessionExpiredHandler = function(handler) {
+	this.impl.authSessionExpiredHandler = handler;
+}
+
+VitalService.prototype.getAuthSessionExpiredHandler = function() {
+	return this.impl.authSessionExpiredHandler;
 }
 
 //bulkExport(VitalSegment, OutputStream)
@@ -192,7 +258,7 @@ VitalService.prototype.delete_ = function() {
 	
 	var l = arguments.length;
 	if(l < 3 || l > 4) {
-		console.error("Expected 3 or 4 arguments - see documentation");
+		this.logger.error("Expected 3 or 4 arguments - see documentation");
 		return;
 	}
 	
@@ -218,7 +284,7 @@ VitalService.prototype.deleteExpanded = function() {
 	
 	var l = arguments.length;
 	if(l < 3 || l > 5) {
-		console.error("Expected 3 to 5 arguments - see documentation");
+		this.logger.error("Expected 3 to 5 arguments - see documentation");
 		return;
 	}
 	
@@ -263,7 +329,7 @@ VitalService.prototype.deleteExpanded = function() {
 VitalService.prototype.deleteExpandedObject = function() {
 	var l = arguments.length;
 	if(l < 3 || l > 4) {
-		console.error("Expected 3 or 4 arguments - see documentation");
+		this.logger.error("Expected 3 or 4 arguments - see documentation");
 		return;
 	}
 	
@@ -288,7 +354,7 @@ VitalService.prototype.deleteExpandedObjects = function() {
 	
 	var l = arguments.length;
 	if(l < 4 || l > 5) {
-		console.error("Expected 4 or 5 arguments - see documentation");
+		this.logger.error("Expected 4 or 5 arguments - see documentation");
 		return;
 	}
 	
@@ -317,7 +383,7 @@ VitalService.prototype.deleteObject = function() {
 	
 	var l = arguments.length;
 	if(l < 3 || l > 4) {
-		console.error("Expected 3 or 4 arguments - see documentation");
+		this.logger.error("Expected 3 or 4 arguments - see documentation");
 		return;
 	}
 	
@@ -341,7 +407,7 @@ VitalService.prototype.deleteObjects = function() {
 	
 	var l = arguments.length;
 	if(l < 3 || l > 4) {
-		console.error("Expected 3 or 4 arguments - see documentation");
+		this.logger.error("Expected 3 or 4 arguments - see documentation");
 		return;
 	}
 	
@@ -439,7 +505,7 @@ VitalService.prototype.insert = function(VitalTransaction, vitalSegment, graphOb
 	
 	var l = arguments.length;
 	if(l < 4 || l > 5) {
-		console.error("Expected 4 or 5 arguments - see documentation");
+		this.logger.error("Expected 4 or 5 arguments - see documentation");
 		return;
 	}
 	
@@ -535,7 +601,7 @@ VitalService.prototype.save = function() {
 	var l = arguments.length; 
 	
 	if( l < 3 || l > 6) {
-		console.error("save method error, expected 3 to 6 arguments - see documentation");
+		this.logger.error("save method error, expected 3 to 6 arguments - see documentation");
 		return;
 	}
 	
