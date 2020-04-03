@@ -1,12 +1,12 @@
 if(typeof(VITAL_JSON_SCHEMAS) == 'undefined') {
- throw ("No VITAL_JSON_SCHEMAS list defined - vital-core domain unavailable");
+  throw ("No VITAL_JSON_SCHEMAS list defined - vital-core domain unavailable");
 }
 
 var vital_0_2_304_schema = {
   "domainURI" : "http://vital.ai/ontology/vital",
   "name" : "vital-0.2.304",
   "version" : "0.2.304",
-  "domainOWLHash" : "f8072acb5f2aabc8157486840d1a7f47",
+  "domainOWLHash" : "b413e87660c8042b30281139409c033a",
   "vitalsignsVersion" : "0.2.304",
   "parents" : [ "http://vital.ai/ontology/vital-core" ],
   "schemas" : [ {
@@ -100,6 +100,12 @@ var vital_0_2_304_schema = {
       },
       "http://vital.ai/ontology/vital#hasAccountLoginSuffix" : {
         "type" : "string"
+      },
+      "http://vital.ai/ontology/vital#hasLocalLoginsType" : {
+        "type" : "string"
+      },
+      "http://vital.ai/ontology/vital#isLocalLoginsValidated" : {
+        "type" : "boolean"
       },
       "http://vital.ai/ontology/vital#isLocked" : {
         "type" : "boolean"
@@ -640,6 +646,12 @@ var vital_0_2_304_schema = {
     "multipleValues" : false,
     "type" : "DateProperty"
   }, {
+    "URI" : "http://vital.ai/ontology/vital#hasLocalLoginsType",
+    "domainClassesURIs" : [ "http://vital.ai/ontology/vital#Account" ],
+    "shortName" : "localLoginsType",
+    "multipleValues" : false,
+    "type" : "StringProperty"
+  }, {
     "URI" : "http://vital.ai/ontology/vital#hasLoginOwnerURI",
     "domainClassesURIs" : [ "http://vital.ai/ontology/vital-core#VITAL_Edge", "http://vital.ai/ontology/vital-core#VITAL_HyperEdge", "http://vital.ai/ontology/vital-core#VITAL_HyperNode", "http://vital.ai/ontology/vital-core#VITAL_Node" ],
     "shortName" : "loginOwnerURI",
@@ -727,6 +739,12 @@ var vital_0_2_304_schema = {
     "URI" : "http://vital.ai/ontology/vital#isFirstElement",
     "domainClassesURIs" : [ "http://vital.ai/ontology/vital#ListElement" ],
     "shortName" : "firstElement",
+    "multipleValues" : false,
+    "type" : "BooleanProperty"
+  }, {
+    "URI" : "http://vital.ai/ontology/vital#isLocalLoginsValidated",
+    "domainClassesURIs" : [ "http://vital.ai/ontology/vital#Account" ],
+    "shortName" : "localLoginsValidated",
     "multipleValues" : false,
     "type" : "BooleanProperty"
   }, {
