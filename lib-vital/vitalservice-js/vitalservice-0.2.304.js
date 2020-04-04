@@ -46,11 +46,6 @@ VitalService = function(address, eventbusURL, successCB, errorCB, options) {
 
 			require(__dirname + '/vital-core-0.2.304.js');
 			require(__dirname + '/vital-0.2.304.js');
-			require(__dirname + '/vital-nlp-0.2.304.js');
-			require(__dirname + '/vital-social-0.2.304.js');
-			require(__dirname + '/vital-aimp-0.1.0.js');
-			require(__dirname + '/haley-0.1.0.js');
-			require(__dirname + '/haley-shopping-0.1.0.js');
 
 			// loding vitalservice domains
 			var fs = require('fs');
