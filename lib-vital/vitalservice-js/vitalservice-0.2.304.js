@@ -50,11 +50,12 @@ VitalService = function(address, eventbusURL, successCB, errorCB, options) {
 			// loding vitalservice domains
 			var fs = require('fs');
 			var path = require('path');
-			var items = fs.readdirSync(path.join(__dirname, '../../../../../vitalservice/domains'));
+			const PATH_TO_DOMAINS = process.env.PATH_TO_DOMAINS || 'vitalservice/domains';
+			var items = fs.readdirSync(path.join(__dirname, '../../../../../', PATH_TO_DOMAINS));
 			for(var i = 0 ; i < items.length; i++) {
 				var file = items[i];
 				console.log("Loading domain file: " + file)
-				require(path.join(__dirname, '../../../../../vitalservice/domains', file));
+				require(path.join(__dirname, '../../../../../', PATH_TO_DOMAINS, file));
 			}
 		
 			var import1 = require(__dirname + '/vitalservice-json-0.2.304.js');
